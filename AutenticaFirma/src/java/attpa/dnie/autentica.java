@@ -15,8 +15,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,14 +28,16 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class autentica extends HttpServlet {
 
-    private byte sign[] = null;
+    private byte clavepublica[] = null;
     private String user = null;
     private String dni = null;
     private String date = null;
-    private byte key[] = null;
-
-    String signBase64 = "";
-    String keyBase64 = "";
+    private String clave = null;
+    private byte firma[] = null;
+    private final DniDatabase db = new DniDatabase();
+    
+    String firmab64 = "";
+    String clavepublicab64 = "";
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -48,70 +48,28 @@ public class autentica extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+    protected void processRequestOK(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         try {
             /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Autenticación de Firma</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Autenticación de Firma</h1>");
-            out.println("<p>");
-            out.println("Datos: "+user+" "+dni+" "+date);
-            out.println("</p>");
-            out.println("<p>");
-            out.println("Firma: "+signBase64);
-            out.println("</p>");
-            out.println("<p>");
-            out.println("Key: "+keyBase64);
-            out.println("</p>");
-            
-            DniDatabase db;
-            
-            db = new DniDatabase();
-            out.println("<p>Leído Base datos "+db.connectToAndQueryDatabase("root", "")+"</p>");
-            out.println("<p>FIN</p>");
-            
-
-            out.println("</body>");
-            out.println("</html>");
+            out.println("Autentificacion correcta a las "+date);
         } finally {
             out.close();
         }
     }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void processRequestER(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        user = request.getParameter("user");
-        dni = request.getParameter("dni");
-        date = request.getParameter("date");
-        
-        signBase64 = request.getParameter("signature");
-        keyBase64 = request.getParameter("key");
-
-        
-        sign = DatatypeConverter.parseBase64Binary(signBase64);
-        key = DatatypeConverter.parseBase64Binary(keyBase64);
-
-        processRequest(request, response);
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        try {
+            /* TODO output your page here. You may use following sample code. */
+            out.println("Error en la autentificacion");
+        } finally {
+            out.close();
+        }
     }
-
     /**
      * Handles the HTTP <code>POST</code> method.
      *
@@ -123,19 +81,23 @@ public class autentica extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String datos;
         user = request.getParameter("user");
         dni = request.getParameter("dni");
-        date = request.getParameter("date");
+        date = request.getParameter("fecha");
+        clave = db.cogerClave(dni);
+        datos = user+dni+clave;
+        firmab64 = request.getParameter("firma");
+        clavepublicab64 = request.getParameter("clavepublica");
         
-        signBase64 = request.getParameter("signature");
-        keyBase64 = request.getParameter("key");
+        firma = DatatypeConverter.parseBase64Binary(firmab64);
+        clavepublica = DatatypeConverter.parseBase64Binary(clavepublicab64);
 
-        
-        sign = DatatypeConverter.parseBase64Binary(signBase64);
-        key = DatatypeConverter.parseBase64Binary(keyBase64);
-
-        
-        processRequest(request, response);
+        if(compruebaFirma(datos, firma, clavepublica)){
+            processRequestOK(request, response);
+        }else{
+            processRequestER(request, response);
+        }
     }
 
     /**

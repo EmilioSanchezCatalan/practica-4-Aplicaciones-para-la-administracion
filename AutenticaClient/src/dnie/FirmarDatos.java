@@ -19,10 +19,10 @@ public class FirmarDatos {
 
     }
 
-    public String firmarDatos(String PIN, String datos) throws Exception {
+    public String [] firmarDatos(String PIN, String datos) throws Exception {
 
         byte[] data = null;
-
+        String [] datosOut = new String[2];
         String alias = "";
         boolean found = false;
 
@@ -33,13 +33,7 @@ public class FirmarDatos {
 
         c.disconnect(true);
 
-        if (datos != null) {
-            data=datos.getBytes();
-            System.out.println("Datos a firmar: " + datos);
-        } else {
-            System.err.println("No hay datos que firmar");
-            return null;
-        }
+        
 
         try {
 
@@ -87,10 +81,29 @@ public class FirmarDatos {
             if (found == true) {
                 certificado = (X509Certificate) keyStore.getCertificate(alias);
                 Key key = keyStore.getKey(alias, pin);
-
-                System.out.println("Datos a firmar por "+certificado.getSubjectDN());
+                String user = certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("GIVENNAME=")+10,
+                            certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("GIVENNAME=")))
+                            + certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("SURNAME=")+8,
+                            certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("SURNAME=")));
+                String dni = certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("SERIALNUMBER=")
+                        +13, certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("SERIALNUMBER=")));
+                user = user.toLowerCase();
+                dni = dni.toLowerCase();
+                if (user.contains(" ")){
+                    user = user.replace(" ", "");
+                }
+                datosOut[0] = user;
+                datosOut[1] = dni;
+                datos = user + dni + datos;
+                if (datos != null) {
+                    data=datos.getBytes();
+                    System.out.println("Datos a firmar: " + datos);
+                } else {
+                    System.err.println("No hay datos que firmar");
+                    return null;
+                }
                 if (key instanceof PrivateKey) {
-
+                    
                     boolean verSig;
                     byte[] realSig;
 
@@ -99,7 +112,6 @@ public class FirmarDatos {
                     keyE = key.getEncoded();
                     if (keyE != null) {
                         String keyEncoded = new String();
-                        System.out.println("Clave " + keyEncoded);
 
                     }
                     
@@ -122,8 +134,6 @@ public class FirmarDatos {
                     //Se verifica la firma
                     verSig = sigver.verify(realSig);
 
-                    System.out.println("Resultado de la verificación inicial de la firma: " + verSig);
-
                     //Generamos dos ficheros
                     
                     //TODO: Se guarda los datos firmados
@@ -137,7 +147,6 @@ public class FirmarDatos {
                     byte encodedKey[] = rsa.getEncoded();
 
                     String rsakey = rsa.getFormat() + " " + rsa.getAlgorithm() + rsa.toString();
-                    System.out.println(rsakey);
                     keyfos.write(encodedKey);
                     keyfos.close();
                 }
@@ -149,8 +158,7 @@ public class FirmarDatos {
         } catch (SignatureException e) {
             System.err.println("Caught exception " + e.toString());
         }
-
-        return alias;
+        return datosOut;
     }
 
     private Card conexionTarjeta() throws Exception {

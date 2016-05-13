@@ -1,13 +1,18 @@
 
+import dnie.Autentica;
 import dnie.FirmarDatos;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.smartcardio.CardException;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * Programa para realización de firmas con DNIe ATENCIÓN: Para que funcione
@@ -28,10 +33,16 @@ public class main {
     public static void main(String[] args) {
 
         FileInputStream signIn = null;
-
-        String datos = null;
+        Date fecha = new Date();
+        String clave = null;
+        String username = null;
+        String dni = null;
+        String firma = null;
+        String clavepublica = null;
         //Sin PIN
         FirmarDatos od = new FirmarDatos();
+        Autentica auth = new Autentica();
+        Base64.Encoder encoder = Base64.getEncoder();
         /*
          IMPORTANTE: Introducir aquí el PIN del DNIe que se vaya a utilizar
          */
@@ -53,9 +64,9 @@ public class main {
 
                 do {
                     //Se pide la cadena a firmar
-                    datos = (String) JOptionPane.showInputDialog(
+                    clave = (String) JOptionPane.showInputDialog(
                             null,
-                            "Datos",
+                            "Clave",
                             "Firmar",
                             JOptionPane.PLAIN_MESSAGE,
                             null,
@@ -63,12 +74,13 @@ public class main {
                             null);
 
                     //If a string was returned, say so.
-                    if ((datos != null) && (datos.length() > 0)) {
-
-                        String firma;
+                    if ((clave != null) && (clave.length() > 0)) {
+                        
                         try {
-                            firma = od.firmarDatos(PIN, datos);
-                            System.out.println("CN: " + firma);
+                            String datos [] = od.firmarDatos(PIN, clave);
+                            username = datos[0];
+                            dni = datos[1];
+                            
                         } catch (Exception ex) {
                             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -94,23 +106,28 @@ public class main {
         } while (salir != 0);
 
         try {
+            
+            String datosf = username + dni + clave;
+            
             //Se lee la firma de fichero
             signIn = new FileInputStream("firma.sig");
             byte signRead[] = new byte[signIn.available()];
             signIn.read(signRead);
             signIn.close();
-            
+            firma = DatatypeConverter.printBase64Binary(signRead);
+            firma = firma.replace("+", "%2B");
             //Se lee la clave pública
             FileInputStream keyIn = new FileInputStream("public.key");
             byte keyRead[] = new byte[keyIn.available()];
             keyIn.read(keyRead);
             keyIn.close();
-            System.out.println("Resultado de la verificación final de la firma: " + od.compruebaFirma(datos, signRead, keyRead));
+            clavepublica = DatatypeConverter.printBase64Binary(keyRead);
+            clavepublica = clavepublica.replace("+", "%2B");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        System.out.println(auth.enviarCredencialesPost("http://localhost:8080/AutenticaFirma/autentica", username, dni, fecha.toString() , firma, clavepublica));
     }
 }
