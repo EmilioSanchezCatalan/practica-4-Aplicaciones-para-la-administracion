@@ -4,12 +4,11 @@ import dnie.FirmarDatos;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.smartcardio.CardException;
+
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.xml.bind.DatatypeConverter;
@@ -34,14 +33,14 @@ public class main {
 
         
         // declaracion de clases.
-        FileInputStream signIn = null;
+        FileInputStream signIn;
         FirmarDatos od = new FirmarDatos();
         Autentica auth = new Autentica();
         Date fecha = new Date();
         
         //declaracion de variables
         String datosin;
-        String clave = null, username = null, dni = null, firma = null, clavepublica = null;
+        String clave, username = null, dni = null, firma = null, clavepublica = null;
         String PIN = "";
         int salir = 0;
         
@@ -57,7 +56,7 @@ public class main {
             }
 
             //Se ha introducido un PIN
-            if ((PIN != null) && (PIN.length() > 0)) {
+            if ((PIN.length() > 0)) {
 
                 do {
                     //Se pide la calve con la que firmar
@@ -109,11 +108,7 @@ public class main {
 
         } while (salir != 0);
 
-        try {
-            
-            String datosf = username + dni + clave;
-            
-            //Se lee la firma de fichero
+        try {//Se lee la firma de fichero
             signIn = new FileInputStream("firma.sig");
             byte signRead[] = new byte[signIn.available()];
             signIn.read(signRead);
@@ -125,11 +120,12 @@ public class main {
             //se remplazan el caracter '+' por '%2B' para su correcta trasmisión.
             firma = firma.replace("+", "%2B");
             
-            //Se lee la clave pública
-            FileInputStream keyIn = new FileInputStream("public.key");
-            byte keyRead[] = new byte[keyIn.available()];
-            keyIn.read(keyRead);
-            keyIn.close();
+            byte[] keyRead;
+            try ( //Se lee la clave pública
+                    FileInputStream keyIn = new FileInputStream("public.key")) {
+                keyRead = new byte[keyIn.available()];
+                keyIn.read(keyRead);
+            }
             
             //se codifica y se guarda en base64
             clavepublica = DatatypeConverter.printBase64Binary(keyRead);

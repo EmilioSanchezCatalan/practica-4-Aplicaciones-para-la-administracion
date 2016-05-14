@@ -7,11 +7,6 @@ import javax.smartcardio.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 public class FirmarDatos {
     
 
@@ -27,7 +22,7 @@ public class FirmarDatos {
      */
     public String [] firmarDatos(String PIN, String datos) throws Exception {
 
-        byte[] data = null;
+        byte[] data;
         String [] datosOut = new String[2];
         String alias = "";
         boolean found = false;
@@ -78,11 +73,7 @@ public class FirmarDatos {
             X509Certificate certificado;
             do {
                 alias = enumeration.nextElement().toString();
-                if (alias.compareTo("CertAutenticacion") == 0) {
-                    found = true;
-                } else {
-                    found = false;
-                }
+                found = alias.compareTo("CertAutenticacion") == 0;
 
             } while (enumeration.hasMoreElements() && found == false);
 
@@ -122,7 +113,7 @@ public class FirmarDatos {
                     boolean verSig;
                     byte[] realSig;
 
-                    byte[] keyE = null;
+                    byte[] keyE;
 
                     keyE = key.getEncoded();
                     if (keyE != null) {
@@ -148,20 +139,19 @@ public class FirmarDatos {
                     //Se verifica la firma
                     verSig = sigver.verify(realSig);
 
-                    //Generamos dos ficheros
-                    
-                    //TODO: Se guarda los datos firmados
-                    FileOutputStream signedFile = new FileOutputStream("firma.sig");
-                    signedFile.write(realSig);
-                    signedFile.close();
+                    try ( //Generamos dos ficheros
+                        FileOutputStream signedFile = new FileOutputStream("firma.sig")) {
+                        signedFile.write(realSig);
+                    }
 
-                    FileOutputStream keyfos = new FileOutputStream("public.key");
-                    RSAPublicKey rsa = (RSAPublicKey) certificado.getPublicKey();
-                    byte encodedKey[] = rsa.getEncoded();
-
-                    String rsakey = rsa.getFormat() + " " + rsa.getAlgorithm() + rsa.toString();
-                    keyfos.write(encodedKey);
-                    keyfos.close();
+                    try (FileOutputStream keyfos = new FileOutputStream("public.key")) {
+                        RSAPublicKey rsa = (RSAPublicKey) certificado.getPublicKey();
+                        byte encodedKey[] = rsa.getEncoded();
+                        
+                        String rsakey = rsa.getFormat() + " " + rsa.getAlgorithm() + rsa.toString();
+                        keyfos.write(encodedKey);
+                        
+                    }
                 }
             }
 
@@ -204,40 +194,4 @@ public class FirmarDatos {
         }
         return card;
     }
-
-    public boolean compruebaFirma(String datos, byte[] signRead,byte[]keyRead) {
-
-        try {
-            if (datos == null) {
-                return false;
-            }
-            byte[] data = datos.getBytes();
-
-            //Se genera la clave RSA a partir del array de bytes
-            X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(keyRead);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
-            
-            //Se prepara el objeto Signature para comprobar la firma
-            Signature sigver2 = Signature.getInstance("SHA1withRSA");
-            //Se añade la clave pública
-            sigver2.initVerify(pubKey);
-            //Se le aportan los datos originales
-            sigver2.update(data);
-            //Se realiza la comprobación, si es correcta devolverá TRUE
-            return sigver2.verify(signRead);
-            
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(FirmarDatos.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(FirmarDatos.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(FirmarDatos.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (SignatureException ex) {
-            Logger.getLogger(FirmarDatos.class.getName()).log(Level.SEVERE, null, ex);
-         
-        }
-        return false;
-    }
-
 }//Fin de la clase Firmar datos

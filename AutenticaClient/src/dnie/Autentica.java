@@ -12,11 +12,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import javax.xml.bind.DatatypeConverter;
+
 /**
  *
  * @author Juan Carlos
@@ -38,14 +37,14 @@ public class Autentica {
     public String enviarCredencialesPost(String urlpost, String user,String dni,String fecha, String firma, String clavepublica) {
         
         String postparam = "user="+user+"&dni="+dni+"&fecha="+fecha+"&firma="+firma+"&clavepublica="+clavepublica;
-        InputStream is = null;
-        String result="";
+        InputStream is;
+        String result;
 
 
-        HttpURLConnection conn = null;
+        HttpURLConnection conn;
         try {
             String contentAsString = "";
-            String tempString = "";
+            String tempString;
             URL url = new URL(urlpost);
             
             System.out.println("Abriendo conexión: " + url.getHost()
@@ -60,12 +59,11 @@ public class Autentica {
 
             //Send request
             OutputStream os = conn.getOutputStream();
-            BufferedWriter wr = new BufferedWriter(
-                    new OutputStreamWriter(os, "UTF-8"));
-
-            wr.write(postparam);
-            wr.flush();
-            wr.close();
+            try (BufferedWriter wr = new BufferedWriter(
+                    new OutputStreamWriter(os, "UTF-8"))) {
+                wr.write(postparam);
+                wr.flush();
+            }
             // Starts the query
             conn.connect();
             final int response = conn.getResponseCode();
