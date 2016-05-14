@@ -40,7 +40,7 @@ public class main {
         
         //declaracion de variables
         String datosin;
-        String clave, username = null, dni = null, firma = null, clavepublica = null;
+        String clave = null, username = null, dni = null, firma = null, clavepublica = null;
         String PIN = "";
         int salir = 0;
         
@@ -126,11 +126,11 @@ public class main {
                 keyRead = new byte[keyIn.available()];
                 keyIn.read(keyRead);
             }
-            
             //se codifica y se guarda en base64
             clavepublica = DatatypeConverter.printBase64Binary(keyRead);
             
             //se remplaza el caracter '+' por '%2B' par asu correcta trasmisión.
+            System.out.println("Verificación final: "+od.compruebaFirma(username + dni + fecha.toString() + clave, signRead, keyRead));
             clavepublica = clavepublica.replace("+", "%2B");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);

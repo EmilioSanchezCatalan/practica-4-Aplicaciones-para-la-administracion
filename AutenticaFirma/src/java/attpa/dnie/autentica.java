@@ -35,9 +35,8 @@ public class autentica extends HttpServlet {
     private String clave = null;
     private byte firma[] = null;
     private final DniDatabase db = new DniDatabase();
-    
-    String firmab64 = "";
-    String clavepublicab64 = "";
+    private String firmab64 = "";
+    private String clavepublicab64 = "";
 
     /**
      * Envia el mensaje de autentificación correcta
@@ -98,7 +97,7 @@ public class autentica extends HttpServlet {
         firmab64 = request.getParameter("firma");
         clavepublicab64 = request.getParameter("clavepublica");
         
-        // datos a que se han firmado
+        // datos que se han firmado
         datos = user+dni+ date + clave;
         
         // decodificación de base64
