@@ -18,14 +18,21 @@ public class FirmarDatos {
     public FirmarDatos(){
 
     }
-
+    /**
+     * 
+     * @param PIN pin del DNIe
+     * @param datos Clave + Fecha
+     * @return devuelve el userio y el dni.
+     * @throws Exception 
+     */
     public String [] firmarDatos(String PIN, String datos) throws Exception {
 
         byte[] data = null;
         String [] datosOut = new String[2];
         String alias = "";
         boolean found = false;
-
+        
+        // comprueba la conexion con la tarjeta
         Card c = conexionTarjeta();
         if (c == null) {
             throw new Exception("No se ha encontrado ninguna tarjeta");
@@ -66,6 +73,7 @@ public class FirmarDatos {
 
             //Obtenemos la clave privada para realizar la firma del documento.
             Enumeration enumeration = keyStore.aliases();
+            
             //java.security.cert.Certificate certificado;
             X509Certificate certificado;
             do {
@@ -81,23 +89,30 @@ public class FirmarDatos {
             if (found == true) {
                 certificado = (X509Certificate) keyStore.getCertificate(alias);
                 Key key = keyStore.getKey(alias, pin);
+                // extraemos el usuario el dni..
                 String user = certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("GIVENNAME=")+10,
                             certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("GIVENNAME=")))
                             + certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("SURNAME=")+8,
                             certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("SURNAME=")));
                 String dni = certificado.getSubjectDN().getName().substring(certificado.getSubjectDN().getName().indexOf("SERIALNUMBER=")
                         +13, certificado.getSubjectDN().getName().indexOf(",",certificado.getSubjectDN().getName().indexOf("SERIALNUMBER=")));
+                
+                // pasamos a minuscula el usuario y el dni;
                 user = user.toLowerCase();
                 dni = dni.toLowerCase();
+                
+                // eliminamos los espacios del nombre de usuario.
                 if (user.contains(" ")){
                     user = user.replace(" ", "");
                 }
+                //los añadimos al los datos que va a devolver el metodo.
                 datosOut[0] = user;
                 datosOut[1] = dni;
+                
+                //añadimos el usuario y el dni a los datos a firmar.
                 datos = user + dni + datos;
                 if (datos != null) {
                     data=datos.getBytes();
-                    System.out.println("Datos a firmar: " + datos);
                 } else {
                     System.err.println("No hay datos que firmar");
                     return null;
@@ -115,8 +130,7 @@ public class FirmarDatos {
 
                     }
                     
-                    //TODO //////////////////////////////////////////////////////77
-                    //Firmamos el reto
+                    //Firmamos el resto
                     Signature sig = Signature.getInstance("SHA1withRSA");
                     sig.initSign((PrivateKey) key);
 
@@ -141,7 +155,6 @@ public class FirmarDatos {
                     signedFile.write(realSig);
                     signedFile.close();
 
-                    //TODO: Se guarda la clave pública
                     FileOutputStream keyfos = new FileOutputStream("public.key");
                     RSAPublicKey rsa = (RSAPublicKey) certificado.getPublicKey();
                     byte encodedKey[] = rsa.getEncoded();

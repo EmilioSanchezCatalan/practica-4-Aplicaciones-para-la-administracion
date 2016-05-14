@@ -40,25 +40,30 @@ public class autentica extends HttpServlet {
     String clavepublicab64 = "";
 
     /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * Envia el mensaje de autentificación correcta
+     * @param request recepción del servidor
+     * @param response respuesta del servidor
+     * @throws ServletException
+     * @throws IOException 
      */
     protected void processRequestOK(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         try {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("Autentificacion correcta a las "+date);
+            out.println("Autentificacion correcta");
         } finally {
             out.close();
         }
     }
+    
+    /**
+     * Envia el mensaje de autentificación incorrecta
+     * @param request recepción del servidor
+     * @param response respuesta del servidor
+     * @throws ServletException
+     * @throws IOException 
+     */
     protected void processRequestER(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -71,28 +76,36 @@ public class autentica extends HttpServlet {
         }
     }
     /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * Metodo que recibe los datos por el metodo post
+     * @param request recepcion del servidor.
+     * @param response respuesta del servidor.
+     * @throws ServletException
+     * @throws IOException 
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        //declaracion de variables
         String datos;
+        
+        
+        // recepcion de datos
         user = request.getParameter("user");
         dni = request.getParameter("dni");
         date = request.getParameter("fecha");
         clave = db.cogerClave(dni);
-        datos = user+dni+clave;
         firmab64 = request.getParameter("firma");
         clavepublicab64 = request.getParameter("clavepublica");
         
+        // datos a que se han firmado
+        datos = user+dni+ date + clave;
+        
+        // decodificación de base64
         firma = DatatypeConverter.parseBase64Binary(firmab64);
         clavepublica = DatatypeConverter.parseBase64Binary(clavepublicab64);
 
+        // funcion de comprobación de la firma
         if(compruebaFirma(datos, firma, clavepublica)){
             processRequestOK(request, response);
         }else{
@@ -111,6 +124,13 @@ public class autentica extends HttpServlet {
     }// </editor-fold>
 
     
+    /**
+     * 
+     * @param datos datos en claro que se han firmado
+     * @param signRead firma de los datos
+     * @param keyRead clave publica
+     * @return true en caso de firma correcta, false en caso de firma incorrecta.
+     */
      public boolean compruebaFirma(String datos, byte[] signRead,byte[]keyRead) {
 
         try {

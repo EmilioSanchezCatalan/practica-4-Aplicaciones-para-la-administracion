@@ -32,22 +32,19 @@ public class main {
      */
     public static void main(String[] args) {
 
+        
+        // declaracion de clases.
         FileInputStream signIn = null;
-        Date fecha = new Date();
-        String clave = null;
-        String username = null;
-        String dni = null;
-        String firma = null;
-        String clavepublica = null;
-        //Sin PIN
         FirmarDatos od = new FirmarDatos();
         Autentica auth = new Autentica();
-        Base64.Encoder encoder = Base64.getEncoder();
-        /*
-         IMPORTANTE: Introducir aquí el PIN del DNIe que se vaya a utilizar
-         */
+        Date fecha = new Date();
+        
+        //declaracion de variables
+        String datosin;
+        String clave = null, username = null, dni = null, firma = null, clavepublica = null;
         String PIN = "";
         int salir = 0;
+        
         do {
 
             JPasswordField passwordField = new JPasswordField();
@@ -63,7 +60,7 @@ public class main {
             if ((PIN != null) && (PIN.length() > 0)) {
 
                 do {
-                    //Se pide la cadena a firmar
+                    //Se pide la calve con la que firmar
                     clave = (String) JOptionPane.showInputDialog(
                             null,
                             "Clave",
@@ -72,17 +69,24 @@ public class main {
                             null,
                             null,
                             null);
-
-                    //If a string was returned, say so.
+                    
                     if ((clave != null) && (clave.length() > 0)) {
                         
                         try {
-                            String datos [] = od.firmarDatos(PIN, clave);
+                            
+                            //Parte de los datos a firmar.
+                            datosin = fecha.toString() + clave ;
+                            
+                            // firma de los datos.
+                            String datos [] = od.firmarDatos(PIN, datosin);
+                            
+                            //extraccion del username y el dni
                             username = datos[0];
                             dni = datos[1];
                             
                         } catch (Exception ex) {
                             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
+                            System.exit(0);
                         }
 
                     } else {
@@ -114,20 +118,31 @@ public class main {
             byte signRead[] = new byte[signIn.available()];
             signIn.read(signRead);
             signIn.close();
+            
+            //se codifica y se guarda en base64
             firma = DatatypeConverter.printBase64Binary(signRead);
+            
+            //se remplazan el caracter '+' por '%2B' para su correcta trasmisión.
             firma = firma.replace("+", "%2B");
+            
             //Se lee la clave pública
             FileInputStream keyIn = new FileInputStream("public.key");
             byte keyRead[] = new byte[keyIn.available()];
             keyIn.read(keyRead);
             keyIn.close();
+            
+            //se codifica y se guarda en base64
             clavepublica = DatatypeConverter.printBase64Binary(keyRead);
+            
+            //se remplaza el caracter '+' por '%2B' par asu correcta trasmisión.
             clavepublica = clavepublica.replace("+", "%2B");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(main.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println(auth.enviarCredencialesPost("http://localhost:8080/AutenticaFirma/autentica", username, dni, fecha.toString() , firma, clavepublica));
+        
+        //Conexion y respuesta del servidor.
+        System.out.println("Respuesta: "+auth.enviarCredencialesPost("http://localhost:8080/AutenticaFirma/autentica", username, dni, fecha.toString() , firma, clavepublica));
     }
 }

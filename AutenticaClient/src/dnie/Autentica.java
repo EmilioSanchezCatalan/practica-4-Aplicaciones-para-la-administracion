@@ -28,12 +28,12 @@ public class Autentica {
      /**
      * 
      * @param urlpost url del recurso que va a recibir las credenciales por POST
-     * @param user
-     * @param dni
-     * @param fecha
-     * @param firma
-     * @param clavepublica 
-     * @return 
+     * @param user nombre de usuario.
+     * @param dni numero del DNI con letra.
+     * @param fecha fecha del envio de los datos.
+     * @param firma firma de los datos.
+     * @param clavepublica clave publica del DNI.
+     * @return la respuesta del servidor.
      */
     public String enviarCredencialesPost(String urlpost, String user,String dni,String fecha, String firma, String clavepublica) {
         
@@ -94,24 +94,4 @@ public class Autentica {
         }
         return result;
     }
-    /**
-     * Devuelve el hash SHA-1 codificado en Base64
-     * @param data
-     * @return 
-     */
-    public static String toSHA1(byte[] data) {
-    MessageDigest md = null;
-    try {
-        md = MessageDigest.getInstance("SHA-1");
-        System.out.println("Hash SHA-1: "+md.toString());
-        String base64=DatatypeConverter.printBase64Binary(md.digest(data));
-        System.out.append("Cadena BASE 64: "+base64);
-        return base64;
-    }
-    catch(NoSuchAlgorithmException e) {
-        e.printStackTrace();
-    } 
-    return null;
-    
-}
 }
